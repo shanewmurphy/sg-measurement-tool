@@ -128,6 +128,7 @@ export default function GlassMeasureApp() {
         label: "",
         widthMM: "",
         heightMM: "",
+        quantity: 1, // ✅ per-panel quantity
       },
     ]);
   };
@@ -279,7 +280,10 @@ export default function GlassMeasureApp() {
                 />
               </div>
               <div>
-                <Quality value={quantity} onChange={setQuantity} />
+                <Quality
+                  value={panel.quantity}
+                  onChange={(val) => updatePanel(panel.id, "quantity", val)}
+                />
               </div>
             </div>
             <div className="lg:mx-auto">
