@@ -25,7 +25,7 @@ export default function Quality({ value, onChange }) {
             <MinusIcon size={16} />
           </Button>
 
-          <Input className="w-full text-center" />
+          <Input className="w-full text-center border-gray-600" />
 
           <Button
             slot="increment"

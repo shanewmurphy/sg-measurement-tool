@@ -223,62 +223,73 @@ export default function GlassMeasureApp() {
         <input
           value={jobTitle}
           onChange={(e) => setJobTitle(e.target.value)}
-          className="border p-2 w-full rounded-lg border-green-950"
+          className="border p-2 w-full rounded-lg border-gray-900"
           placeholder="e.g. Job Name or Customer Name"
         />
       </div>
 
       {panels.map((panel, index) => (
-        <div
-          key={panel.id}
-          className="border-2 rounded-xl p-4 grid md:grid-cols-2 gap-4"
-        >
-          <div className="space-y-3">
-            <h2 className="font-medium">Panel {index + 1}</h2>
-            <input
-              placeholder="Panel label"
-              value={panel.label}
-              onChange={(e) => updatePanel(panel.id, "label", e.target.value)}
-              className="border p-2 w-full rounded"
-            />
+        <div>
+          <div
+            key={panel.id}
+            className="border-2 rounded-xl p-4 grid md:grid-cols-2 gap-4"
+          >
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="font-medium">Panel {index + 1}</h2>
+                </div>
+                <div>
+                  <button
+                    onClick={() => deletePanel(panel.id)}
+                    className="text-xs p-2 rounded-sm bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Delete Panel
+                  </button>
+                  <button>
+                    <DeleteLogo />
+                  </button>
+                </div>
+              </div>
+              <input
+                placeholder="Panel label"
+                value={panel.label}
+                onChange={(e) => updatePanel(panel.id, "label", e.target.value)}
+                className="border p-2 w-full rounded border-gray-600"
+              />
 
-            <div className="flex gap-3">
-              <input
-                type="number"
-                placeholder="Width (mm)"
-                value={panel.widthMM}
-                onChange={(e) =>
-                  updatePanel(panel.id, "widthMM", e.target.value)
-                }
-                className="border p-2 w-full rounded"
-              />
-              <input
-                type="number"
-                placeholder="Height (mm)"
-                value={panel.heightMM}
-                onChange={(e) =>
-                  updatePanel(panel.id, "heightMM", e.target.value)
-                }
-                className="border p-2 w-full rounded"
+              <div className="flex gap-3">
+                <input
+                  type="number"
+                  placeholder="Width (mm)"
+                  value={panel.widthMM}
+                  onChange={(e) =>
+                    updatePanel(panel.id, "widthMM", e.target.value)
+                  }
+                  className="border p-2 w-full rounded border-gray-600"
+                />
+                <input
+                  type="number"
+                  placeholder="Height (mm)"
+                  value={panel.heightMM}
+                  onChange={(e) =>
+                    updatePanel(panel.id, "heightMM", e.target.value)
+                  }
+                  className="border p-2 w-full rounded border-gray-600"
+                />
+              </div>
+              <div>
+                <Quality value={quantity} onChange={setQuantity} />
+              </div>
+            </div>
+            <div className="lg:mx-auto">
+              <PanelSVG
+                ref={(el) => (svgRefs.current[panel.id] = el)}
+                widthMM={panel.widthMM}
+                heightMM={panel.heightMM}
+                label={panel.label}
               />
             </div>
-            <div>
-              <Quality value={quantity} onChange={setQuantity} />
-            </div>
-            <button
-              onClick={() => deletePanel(panel.id)}
-              className="text-sm text-red-600 hover:underline"
-            >
-              Delete panel
-            </button>
-          </div>
-          <div className="lg:mx-auto">
-            <PanelSVG
-              ref={(el) => (svgRefs.current[panel.id] = el)}
-              widthMM={panel.widthMM}
-              heightMM={panel.heightMM}
-              label={panel.label}
-            />
           </div>
         </div>
       ))}
@@ -301,5 +312,17 @@ export default function GlassMeasureApp() {
         )}
       </div>
     </div>
+  );
+}
+
+function DeleteLogo() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      version="1.1"
+      viewBox="-5.0 -10.0 110.0 135.0"
+    >
+      <path d="m50 6.25c-24.125 0-43.75 19.625-43.75 43.75s19.625 43.75 43.75 43.75 43.75-19.625 43.75-43.75-19.625-43.75-43.75-43.75zm17.844 57.156c1.2188 1.2188 1.2188 3.2188 0 4.4375-0.625 0.59375-1.4062 0.90625-2.2188 0.90625s-1.5938-0.3125-2.2188-0.90625l-13.406-13.438-13.406 13.438c-0.625 0.59375-1.4062 0.90625-2.2188 0.90625s-1.5938-0.3125-2.2188-0.90625c-1.2188-1.2188-1.2188-3.2188 0-4.4375l13.438-13.406-13.438-13.406c-1.2188-1.2188-1.2188-3.2188 0-4.4375s3.2188-1.2188 4.4375 0l13.406 13.438 13.406-13.438c1.2188-1.2188 3.2188-1.2188 4.4375 0s1.2188 3.2188 0 4.4375l-13.438 13.406z" />
+    </svg>
   );
 }
