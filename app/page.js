@@ -188,11 +188,11 @@ export default function GlassMeasureApp() {
         pdf.text(`W: ${panel.widthMM} mm`, x, yFinal + 5);
         pdf.text(`H: ${panel.heightMM} mm`, x, yFinal + 10);
 
-        pdf.addImage(image, "PNG", x, yFinal + 14, CELL_WIDTH, CELL_WIDTH);
-
         pdf.setFontSize(10);
-        pdf.text(`Cut copies: ${quantity}`, x, yFinal + 15);
+        pdf.text(`Qty: ${panel.quantity}`, x, yFinal);
         y += 8;
+
+        pdf.addImage(image, "PNG", x, yFinal + 14, CELL_WIDTH, CELL_WIDTH);
 
         col++;
         if (col === COLS) {
