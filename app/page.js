@@ -3,6 +3,7 @@
 import { useState, useRef, forwardRef } from "react";
 import jsPDF from "jspdf";
 import Quality from "@/components/Quality";
+// import Material from "@/components/material";
 
 /* ---------- SAFE SVG → PNG ---------- */
 function svgToPng(svgEl, scale = 4) {
@@ -46,7 +47,7 @@ const PanelSVG = forwardRef(function PanelSVG(
   { widthMM, heightMM, label },
   ref
 ) {
-  const SCALE = 0.15;
+  const SCALE = 0.12;
   const width = Number(widthMM) * SCALE;
   const height = Number(heightMM) * SCALE;
 
@@ -72,9 +73,9 @@ const PanelSVG = forwardRef(function PanelSVG(
       className="border bg-gray-50"
     >
       {/* Panel label */}
-      <text x={padding} y={18} fontSize="12" fontWeight="bold">
+      {/* <text x={padding} y={18} fontSize="12" fontWeight="bold">
         {label || "Panel"}
-      </text>
+      </text> */}
 
       {/* Glass */}
       <rect
@@ -115,6 +116,7 @@ const PanelSVG = forwardRef(function PanelSVG(
 /* ---------- MAIN APP ---------- */
 export default function GlassMeasureApp() {
   const [jobTitle, setJobTitle] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [panels, setPanels] = useState([]);
   const svgRefs = useRef({});
 
@@ -179,13 +181,17 @@ export default function GlassMeasureApp() {
         const image = await svgToPng(svgEl);
 
         pdf.setFontSize(10);
-        pdf.text(panel.label || `Panel ${i + 1}`, x, yFinal);
+        pdf.text(panel.label || `Panel ${i + 1}`, x, yFinal + 20);
 
         pdf.setFontSize(9);
         pdf.text(`W: ${panel.widthMM} mm`, x, yFinal + 5);
         pdf.text(`H: ${panel.heightMM} mm`, x, yFinal + 10);
 
         pdf.addImage(image, "PNG", x, yFinal + 14, CELL_WIDTH, CELL_WIDTH);
+
+        pdf.setFontSize(10);
+        pdf.text(`Cut copies: ${quantity}`, x, yFinal + 15);
+        y += 8;
 
         col++;
         if (col === COLS) {
@@ -207,14 +213,17 @@ export default function GlassMeasureApp() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">
-      <h1 className="text-xl font-semibold">Glass Measurement Recorder</h1>
-
+      <h1 className="text-xl text-slate-700 font-semibold">
+        SG Solutions Glass Measurement Recorder
+      </h1>
       <div className="space-y-2">
-        <label className="block text-sm font-medium">Job Title</label>
+        <label className="block text-base text-gray-900 font-semibold">
+          Job Title
+        </label>
         <input
           value={jobTitle}
           onChange={(e) => setJobTitle(e.target.value)}
-          className="border p-2 w-full rounded"
+          className="border p-2 w-full rounded-lg border-green-950"
           placeholder="e.g. Job Name or Customer Name"
         />
       </div>
@@ -222,7 +231,7 @@ export default function GlassMeasureApp() {
       {panels.map((panel, index) => (
         <div
           key={panel.id}
-          className="border rounded p-4 grid md:grid-cols-2 gap-4"
+          className="border-2 rounded-xl p-4 grid md:grid-cols-2 gap-4"
         >
           <div className="space-y-3">
             <h2 className="font-medium">Panel {index + 1}</h2>
@@ -254,7 +263,7 @@ export default function GlassMeasureApp() {
               />
             </div>
             <div>
-              <Quality />
+              <Quality value={quantity} onChange={setQuantity} />
             </div>
             <button
               onClick={() => deletePanel(panel.id)}
@@ -263,13 +272,14 @@ export default function GlassMeasureApp() {
               Delete panel
             </button>
           </div>
-
-          <PanelSVG
-            ref={(el) => (svgRefs.current[panel.id] = el)}
-            widthMM={panel.widthMM}
-            heightMM={panel.heightMM}
-            label={panel.label}
-          />
+          <div className="lg:mx-auto">
+            <PanelSVG
+              ref={(el) => (svgRefs.current[panel.id] = el)}
+              widthMM={panel.widthMM}
+              heightMM={panel.heightMM}
+              label={panel.label}
+            />
+          </div>
         </div>
       ))}
 
