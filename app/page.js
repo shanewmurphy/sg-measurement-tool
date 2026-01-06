@@ -106,6 +106,11 @@ export default function GlassMeasureApp() {
   const [panels, setPanels] = useState([]);
   const svgRefs = useRef({});
 
+  const totalPanels = panels.reduce(
+    (sum, panel) => sum + Number(panel.quantity || 1),
+    0
+  );
+
   const addPanel = () => {
     setPanels((prev) => [
       ...prev,
@@ -138,22 +143,55 @@ export default function GlassMeasureApp() {
 
   const totalM2 = panels.reduce((sum, p) => sum + calcPanelM2(p), 0);
 
-  /* ---------- PDF ---------- */
+  /*-------Helper Function-------*/
+  const calculateTotalAreaM2 = (panels) => {
+    return panels.reduce((total, panel) => {
+      const w = Number(panel.widthMM);
+      const h = Number(panel.heightMM);
+      const qty = Number(panel.quantity || 1);
+
+      if (!w || !h) return total;
+
+      const areaM2 = (w * h) / 1_000_000; // mm² → m²
+      return total + areaM2 * qty;
+    }, 0);
+  };
+
+  /* ---------- summary values ---------- */
+  // const totalPanels = panels.length;
+
+  const totalCutCopies = panels.reduce(
+    (sum, panel) => sum + Number(panel.quantity || 0),
+    0
+  );
+
   const generatePDF = async () => {
     try {
       const pdf = new jsPDF();
       let y = 20;
 
       pdf.setFontSize(14);
-      pdf.text(jobTitle || "Window Film Re-Cut Measurements", 105, y, {
-        align: "center",
-      });
+      pdf.text(jobTitle || "Window Film Re-Cut Measurements", 20, y);
+      y += 10;
+
+      // ✅ TOTAL AREA
+      const totalArea = calculateTotalAreaM2(panels);
+      pdf.setFontSize(11);
+      pdf.text(`Total Area: ${totalArea.toFixed(2)} m²`, 20, y);
+      y += 12;
+
+      /*--- Panels Copies -----*/
+      pdf.setFontSize(11);
+      pdf.text(`Total panels: ${totalPanels}`, 20, y);
+      y += 6;
+
+      pdf.text(`Total cut copies: ${totalCutCopies}`, 20, y);
       y += 10;
 
       const COLS = 2;
       const CELL_WIDTH = 60;
       const CELL_HEIGHT = 90;
-      const START_X = 30;
+      const START_X = 20;
       const START_Y = y;
 
       let col = 0;
@@ -164,27 +202,28 @@ export default function GlassMeasureApp() {
         const svgEl = svgRefs.current[panel.id];
         if (!svgEl) continue;
 
-        const yPos = START_Y + row * (CELL_HEIGHT + 25);
+        const yPos = START_Y + row * (CELL_HEIGHT + 20);
+
         if (yPos + CELL_HEIGHT > 280) {
           pdf.addPage();
           col = 0;
           row = 0;
         }
 
-        const x = START_X + col * (CELL_WIDTH + 20);
-        const yFinal = START_Y + row * (CELL_HEIGHT + 25);
+        const x = START_X + col * (CELL_WIDTH + 10);
+        const yFinal = START_Y + row * (CELL_HEIGHT + 20);
 
         const image = await svgToPng(svgEl);
-        const panelM2 = calcPanelM2(panel);
+
+        pdf.setFontSize(10);
+        pdf.text(panel.label || `Panel ${i + 1}`, x, yFinal);
 
         pdf.setFontSize(9);
-        pdf.text(panel.label || `Panel ${i + 1}`, x, yFinal);
         pdf.text(`W: ${panel.widthMM} mm`, x, yFinal + 5);
         pdf.text(`H: ${panel.heightMM} mm`, x, yFinal + 10);
         pdf.text(`Qty: ${panel.quantity}`, x, yFinal + 15);
-        pdf.text(`Area: ${panelM2.toFixed(2)} m²`, x, yFinal + 20);
 
-        pdf.addImage(image, "PNG", x, yFinal + 24, CELL_WIDTH, CELL_WIDTH);
+        pdf.addImage(image, "PNG", x, yFinal + 20, CELL_WIDTH, CELL_WIDTH);
 
         col++;
         if (col === COLS) {
@@ -192,11 +231,6 @@ export default function GlassMeasureApp() {
           row++;
         }
       }
-
-      pdf.setFontSize(12);
-      pdf.text(`Total Area: ${totalM2.toFixed(2)} m²`, 105, 290, {
-        align: "center",
-      });
 
       const safeFileName = (jobTitle || "glass-measurements")
         .replace(/[^a-z0-9]/gi, "_")
@@ -221,12 +255,16 @@ export default function GlassMeasureApp() {
         className="border p-2 w-full rounded"
         placeholder="Job title"
       />
-      <div>
-        {panels.length > 0 && (
-          <div className="font-medium bg-gray-100 rounded-md p-4">
-            Total Area: {totalM2.toFixed(2)} m²
-          </div>
-        )}
+      <div className="flex justify-between items-center bg-gray-100 rounded-md p-4">
+        <div>Panels: {panels.length}</div>
+        <div>
+          {panels.length > 0 && (
+            <div className="font-bold text-gray-600 text-xl">
+              <spam className="text-sm font-medium pr-1">Total Area:</spam>
+              {totalM2.toFixed(2)} m²
+            </div>
+          )}
+        </div>
       </div>
       {panels.map((panel, index) => (
         <div
@@ -282,12 +320,13 @@ export default function GlassMeasureApp() {
               Delete Panel
             </button>
           </div>
-
-          <PanelSVG
-            ref={(el) => (svgRefs.current[panel.id] = el)}
-            widthMM={panel.widthMM}
-            heightMM={panel.heightMM}
-          />
+          <div className="lg:mx-auto">
+            <PanelSVG
+              ref={(el) => (svgRefs.current[panel.id] = el)}
+              widthMM={panel.widthMM}
+              heightMM={panel.heightMM}
+            />
+          </div>
         </div>
       ))}
 
