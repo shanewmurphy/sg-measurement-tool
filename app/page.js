@@ -3,7 +3,6 @@
 import { useState, useRef, forwardRef } from "react";
 import jsPDF from "jspdf";
 import Quality from "@/components/Quality";
-// import Material from "@/components/material";
 
 /* ---------- SAFE SVG → PNG ---------- */
 function svgToPng(svgEl, scale = 4) {
@@ -42,11 +41,8 @@ function svgToPng(svgEl, scale = 4) {
   });
 }
 
-/* ---------- SVG PREVIEW (NO ARROWS) ---------- */
-const PanelSVG = forwardRef(function PanelSVG(
-  { widthMM, heightMM, label },
-  ref
-) {
+/* ---------- SVG PREVIEW ---------- */
+const PanelSVG = forwardRef(function PanelSVG({ widthMM, heightMM }, ref) {
   const SCALE = 0.12;
   const width = Number(widthMM) * SCALE;
   const height = Number(heightMM) * SCALE;
@@ -69,15 +65,8 @@ const PanelSVG = forwardRef(function PanelSVG(
       width={svgWidth}
       height={svgHeight}
       viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-      xmlns="http://www.w3.org/2000/svg"
       className="border bg-gray-50"
     >
-      {/* Panel label */}
-      {/* <text x={padding} y={18} fontSize="12" fontWeight="bold">
-        {label || "Panel"}
-      </text> */}
-
-      {/* Glass */}
       <rect
         x={padding}
         y={30}
@@ -88,7 +77,6 @@ const PanelSVG = forwardRef(function PanelSVG(
         strokeWidth="1"
       />
 
-      {/* Width text */}
       <text
         x={padding + width / 2}
         y={30 + height + 20}
@@ -98,11 +86,10 @@ const PanelSVG = forwardRef(function PanelSVG(
         W {widthMM} mm
       </text>
 
-      {/* Height text */}
       <text
         x={padding - 10}
         y={30 + height / 2}
-        fontSize="11"
+        fontSize="10"
         textAnchor="middle"
         dominantBaseline="middle"
         transform={`rotate(-90 ${padding - 10} ${30 + height / 2})`}
@@ -116,7 +103,6 @@ const PanelSVG = forwardRef(function PanelSVG(
 /* ---------- MAIN APP ---------- */
 export default function GlassMeasureApp() {
   const [jobTitle, setJobTitle] = useState("");
-  const [quantity, setQuantity] = useState(1);
   const [panels, setPanels] = useState([]);
   const svgRefs = useRef({});
 
@@ -128,7 +114,7 @@ export default function GlassMeasureApp() {
         label: "",
         widthMM: "",
         heightMM: "",
-        quantity: 1, // ✅ per-panel quantity
+        quantity: 1,
       },
     ]);
   };
@@ -144,20 +130,30 @@ export default function GlassMeasureApp() {
     );
   };
 
-  /* ---------- PDF (3 COLUMN GRID) ---------- */
+  /* ---------- m² CALCULATIONS ---------- */
+  const calcPanelM2 = (panel) =>
+    (Number(panel.widthMM) / 1000) *
+    (Number(panel.heightMM) / 1000) *
+    panel.quantity;
+
+  const totalM2 = panels.reduce((sum, p) => sum + calcPanelM2(p), 0);
+
+  /* ---------- PDF ---------- */
   const generatePDF = async () => {
     try {
       const pdf = new jsPDF();
       let y = 20;
 
       pdf.setFontSize(14);
-      pdf.text(jobTitle || "Window Film Re-Cut Measurements", 20, y);
-      y += 12;
+      pdf.text(jobTitle || "Window Film Re-Cut Measurements", 105, y, {
+        align: "center",
+      });
+      y += 10;
 
       const COLS = 2;
       const CELL_WIDTH = 60;
       const CELL_HEIGHT = 90;
-      const START_X = 20;
+      const START_X = 30;
       const START_Y = y;
 
       let col = 0;
@@ -168,31 +164,27 @@ export default function GlassMeasureApp() {
         const svgEl = svgRefs.current[panel.id];
         if (!svgEl) continue;
 
-        const yPos = START_Y + row * (CELL_HEIGHT + 20);
-
+        const yPos = START_Y + row * (CELL_HEIGHT + 25);
         if (yPos + CELL_HEIGHT > 280) {
           pdf.addPage();
           col = 0;
           row = 0;
         }
 
-        const x = START_X + col * (CELL_WIDTH + 10);
-        const yFinal = START_Y + row * (CELL_HEIGHT + 20);
+        const x = START_X + col * (CELL_WIDTH + 20);
+        const yFinal = START_Y + row * (CELL_HEIGHT + 25);
 
         const image = await svgToPng(svgEl);
-
-        pdf.setFontSize(10);
-        pdf.text(panel.label || `Panel ${i + 1}`, x, yFinal + 20);
+        const panelM2 = calcPanelM2(panel);
 
         pdf.setFontSize(9);
+        pdf.text(panel.label || `Panel ${i + 1}`, x, yFinal);
         pdf.text(`W: ${panel.widthMM} mm`, x, yFinal + 5);
         pdf.text(`H: ${panel.heightMM} mm`, x, yFinal + 10);
+        pdf.text(`Qty: ${panel.quantity}`, x, yFinal + 15);
+        pdf.text(`Area: ${panelM2.toFixed(2)} m²`, x, yFinal + 20);
 
-        pdf.setFontSize(10);
-        pdf.text(`Qty: ${panel.quantity}`, x, yFinal);
-        y += 8;
-
-        pdf.addImage(image, "PNG", x, yFinal + 14, CELL_WIDTH, CELL_WIDTH);
+        pdf.addImage(image, "PNG", x, yFinal + 24, CELL_WIDTH, CELL_WIDTH);
 
         col++;
         if (col === COLS) {
@@ -200,6 +192,11 @@ export default function GlassMeasureApp() {
           row++;
         }
       }
+
+      pdf.setFontSize(12);
+      pdf.text(`Total Area: ${totalM2.toFixed(2)} m²`, 105, 290, {
+        align: "center",
+      });
 
       const safeFileName = (jobTitle || "glass-measurements")
         .replace(/[^a-z0-9]/gi, "_")
@@ -214,87 +211,83 @@ export default function GlassMeasureApp() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">
-      <h1 className="text-xl text-slate-700 font-semibold">
+      <h1 className="text-xl font-semibold">
         SG Solutions Glass Measurement Recorder
       </h1>
-      <div className="space-y-2">
-        <label className="block text-base text-gray-900 font-semibold">
-          Job Title
-        </label>
-        <input
-          value={jobTitle}
-          onChange={(e) => setJobTitle(e.target.value)}
-          className="border p-2 w-full rounded-lg border-gray-900"
-          placeholder="e.g. Job Name or Customer Name"
-        />
-      </div>
 
-      {panels.map((panel, index) => (
-        <div>
-          <div
-            key={panel.id}
-            className="border-2 rounded-xl p-4 grid md:grid-cols-2 gap-4"
-          >
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="font-medium">Panel {index + 1}</h2>
-                </div>
-                <div>
-                  <button
-                    onClick={() => deletePanel(panel.id)}
-                    className="text-xs p-2 rounded-sm bg-red-600 text-white hover:bg-red-700"
-                  >
-                    Delete Panel
-                  </button>
-                  <button>
-                    <DeleteLogo />
-                  </button>
-                </div>
-              </div>
-              <input
-                placeholder="Panel label"
-                value={panel.label}
-                onChange={(e) => updatePanel(panel.id, "label", e.target.value)}
-                className="border p-2 w-full rounded border-gray-600"
-              />
-
-              <div className="flex gap-3">
-                <input
-                  type="number"
-                  placeholder="Width (mm)"
-                  value={panel.widthMM}
-                  onChange={(e) =>
-                    updatePanel(panel.id, "widthMM", e.target.value)
-                  }
-                  className="border p-2 w-full rounded border-gray-600"
-                />
-                <input
-                  type="number"
-                  placeholder="Height (mm)"
-                  value={panel.heightMM}
-                  onChange={(e) =>
-                    updatePanel(panel.id, "heightMM", e.target.value)
-                  }
-                  className="border p-2 w-full rounded border-gray-600"
-                />
-              </div>
-              <div>
-                <Quality
-                  value={panel.quantity}
-                  onChange={(val) => updatePanel(panel.id, "quantity", val)}
-                />
-              </div>
-            </div>
-            <div className="lg:mx-auto">
-              <PanelSVG
-                ref={(el) => (svgRefs.current[panel.id] = el)}
-                widthMM={panel.widthMM}
-                heightMM={panel.heightMM}
-                label={panel.label}
-              />
-            </div>
+      <input
+        value={jobTitle}
+        onChange={(e) => setJobTitle(e.target.value)}
+        className="border p-2 w-full rounded"
+        placeholder="Job title"
+      />
+      <div>
+        {panels.length > 0 && (
+          <div className="font-medium bg-gray-100 rounded-md p-4">
+            Total Area: {totalM2.toFixed(2)} m²
           </div>
+        )}
+      </div>
+      {panels.map((panel, index) => (
+        <div
+          key={panel.id}
+          className="border-2 rounded-xl p-4 grid md:grid-cols-2 gap-4"
+        >
+          <div className="space-y-3">
+            <h2 className="font-medium">Panel {index + 1}</h2>
+
+            <input
+              placeholder="Panel label"
+              value={panel.label}
+              onChange={(e) => updatePanel(panel.id, "label", e.target.value)}
+              className="border p-2 w-full rounded"
+            />
+
+            <div className="flex gap-3">
+              <input
+                type="number"
+                placeholder="Width (mm)"
+                value={panel.widthMM}
+                onChange={(e) =>
+                  updatePanel(panel.id, "widthMM", e.target.value)
+                }
+                className="border p-2 w-full rounded"
+              />
+              <input
+                type="number"
+                placeholder="Height (mm)"
+                value={panel.heightMM}
+                onChange={(e) =>
+                  updatePanel(panel.id, "heightMM", e.target.value)
+                }
+                className="border p-2 w-full rounded"
+              />
+            </div>
+
+            <Quality
+              value={panel.quantity}
+              onChange={(val) => updatePanel(panel.id, "quantity", val)}
+            />
+
+            {panel.widthMM && panel.heightMM && (
+              <p className="text-sm text-gray-600">
+                Area: {calcPanelM2(panel).toFixed(2)} m²
+              </p>
+            )}
+
+            <button
+              onClick={() => deletePanel(panel.id)}
+              className="text-sm text-red-600"
+            >
+              Delete Panel
+            </button>
+          </div>
+
+          <PanelSVG
+            ref={(el) => (svgRefs.current[panel.id] = el)}
+            widthMM={panel.widthMM}
+            heightMM={panel.heightMM}
+          />
         </div>
       ))}
 
@@ -316,17 +309,5 @@ export default function GlassMeasureApp() {
         )}
       </div>
     </div>
-  );
-}
-
-function DeleteLogo() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      version="1.1"
-      viewBox="-5.0 -10.0 110.0 135.0"
-    >
-      <path d="m50 6.25c-24.125 0-43.75 19.625-43.75 43.75s19.625 43.75 43.75 43.75 43.75-19.625 43.75-43.75-19.625-43.75-43.75-43.75zm17.844 57.156c1.2188 1.2188 1.2188 3.2188 0 4.4375-0.625 0.59375-1.4062 0.90625-2.2188 0.90625s-1.5938-0.3125-2.2188-0.90625l-13.406-13.438-13.406 13.438c-0.625 0.59375-1.4062 0.90625-2.2188 0.90625s-1.5938-0.3125-2.2188-0.90625c-1.2188-1.2188-1.2188-3.2188 0-4.4375l13.438-13.406-13.438-13.406c-1.2188-1.2188-1.2188-3.2188 0-4.4375s3.2188-1.2188 4.4375 0l13.406 13.438 13.406-13.438c1.2188-1.2188 3.2188-1.2188 4.4375 0s1.2188 3.2188 0 4.4375l-13.438 13.406z" />
-    </svg>
   );
 }
