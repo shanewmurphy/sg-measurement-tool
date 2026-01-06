@@ -255,12 +255,14 @@ export default function GlassMeasureApp() {
         className="border p-2 w-full rounded"
         placeholder="Job title"
       />
-      <div className="flex justify-between items-center bg-gray-100 rounded-md p-4">
-        <div>Panels: {panels.length}</div>
+      <div className="flex justify-end items-center bg-gray-100 rounded-md p-4">
+        {/* <div>Panels: {panels.length}</div> */}
         <div>
           {panels.length > 0 && (
             <div className="font-bold text-gray-600 text-xl">
-              <spam className="text-sm font-medium pr-1">Total Area:</spam>
+              <div className="text-sm font-medium inline-block pr-1">
+                Total Area:
+              </div>
               {totalM2.toFixed(2)} m²
             </div>
           )}
@@ -272,7 +274,19 @@ export default function GlassMeasureApp() {
           className="border-2 rounded-xl p-4 grid md:grid-cols-2 gap-4"
         >
           <div className="space-y-3">
-            <h2 className="font-medium">Panel {index + 1}</h2>
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="font-medium">Panel {index + 1}</h2>
+              </div>
+              <div>
+                <button
+                  onClick={() => deletePanel(panel.id)}
+                  className="text-sm font-semibold rounded-sm py-1 px-3.5 bg-red-600 text-white hover:underline"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
 
             <input
               placeholder="Panel label"
@@ -312,13 +326,6 @@ export default function GlassMeasureApp() {
                 Area: {calcPanelM2(panel).toFixed(2)} m²
               </p>
             )}
-
-            <button
-              onClick={() => deletePanel(panel.id)}
-              className="text-sm text-red-600"
-            >
-              Delete Panel
-            </button>
           </div>
           <div className="lg:mx-auto">
             <PanelSVG
