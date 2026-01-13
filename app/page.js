@@ -3,6 +3,7 @@
 import { useState, useRef, forwardRef } from "react";
 import jsPDF from "jspdf";
 import Quality from "@/components/Quality";
+// import MaterialSelection from "@/components/MaterialSelection";
 
 /* ---------- SAFE SVG → PNG ---------- */
 function svgToPng(svgEl, scale = 4) {
@@ -219,9 +220,9 @@ export default function GlassMeasureApp() {
         pdf.text(panel.label || `Panel ${i + 1}`, x, yFinal);
 
         pdf.setFontSize(9);
-        pdf.text(`W: ${panel.widthMM} mm`, x, yFinal + 5);
-        pdf.text(`H: ${panel.heightMM} mm`, x, yFinal + 10);
-        pdf.text(`Qty: ${panel.quantity}`, x, yFinal + 15);
+        pdf.text(`W: ${panel.widthMM} mm`, x, yFinal + 10);
+        pdf.text(`H: ${panel.heightMM} mm`, x, yFinal + 15);
+        pdf.text(`Qty: ${panel.quantity}`, x, yFinal + 20);
 
         pdf.addImage(image, "PNG", x, yFinal + 20, CELL_WIDTH, CELL_WIDTH);
 
@@ -257,8 +258,11 @@ export default function GlassMeasureApp() {
         value={jobTitle}
         onChange={(e) => setJobTitle(e.target.value)}
         className="border p-2 w-full rounded"
-        placeholder="Job title"
+        placeholder="Job title, company name, customer name..."
       />
+      {/* <div className="max-w-4xl mx-auto">
+        <MaterialSelection />
+      </div> */}
       <div className="flex justify-end items-center bg-gray-100 rounded-md p-4">
         {/* <div>Panels: {panels.length}</div> */}
         <div>
@@ -292,11 +296,30 @@ export default function GlassMeasureApp() {
               </div>
             </div>
 
-            <input
+            <textarea
+              rows={3}
               placeholder="Panel label"
               value={panel.label}
-              onChange={(e) => updatePanel(panel.id, "label", e.target.value)}
-              className="border p-2 w-full rounded"
+              onChange={(e) => {
+                const maxCharsPerLine = 32;
+                const raw = e.target.value;
+
+                // Ensure the first line breaks after 30 characters
+                const lines = raw.split("\n");
+                if (lines[0].length > maxCharsPerLine) {
+                  const firstLine = lines[0];
+                  const wrapped =
+                    firstLine.slice(0, maxCharsPerLine) +
+                    "\n" +
+                    firstLine.slice(maxCharsPerLine);
+                  const rest =
+                    lines.length > 1 ? "\n" + lines.slice(1).join("\n") : "";
+                  updatePanel(panel.id, "label", wrapped + rest);
+                } else {
+                  updatePanel(panel.id, "label", raw);
+                }
+              }}
+              className="border p-2 w-full rounded resize-none"
             />
 
             <div className="flex gap-3">
